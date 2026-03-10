@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "Agent Platform",
-  description: "A powerful AI agent platform",
+  title: "文案创作平台",
+  description: "一个基于AI的自媒体文案创作平台，帮助用户快速生成专业文案",
 }
 
 export default function RootLayout({

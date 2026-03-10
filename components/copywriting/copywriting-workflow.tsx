@@ -11,6 +11,9 @@ import {
   Zap,
   Layers,
   PenLine,
+  Edit2,
+  Save,
+  Copy,
 } from "lucide-react"
 import {
   useCopywritingWorkflowStore,
@@ -179,10 +182,46 @@ interface ItemGridProps {
   items: string[]
   selectedIndex: number | null
   onSelect: (index: number) => void
+  onEdit?: (index: number, newValue: string) => void
   isCopy?: boolean
+  editable?: boolean
 }
 
-function ItemGrid({ items, selectedIndex, onSelect, isCopy }: ItemGridProps) {
+function ItemGrid({ items, selectedIndex, onSelect, onEdit, isCopy, editable = false }: ItemGridProps) {
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState("")
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  const handleEditStart = (i: number, item: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingIndex(i)
+    setEditValue(item)
+  }
+
+  const handleEditSave = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (editingIndex !== null && onEdit) {
+      onEdit(editingIndex, editValue)
+    }
+    setEditingIndex(null)
+  }
+
+  const handleEditCancel = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setEditingIndex(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+      if (editingIndex !== null && onEdit) {
+        onEdit(editingIndex, editValue)
+      }
+      setEditingIndex(null)
+    } else if (e.key === "Escape") {
+      setEditingIndex(null)
+    }
+  }
+
   return (
     <div className={cn("grid gap-2", isCopy ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2")}>
       {items.map((item, i) =>
@@ -190,16 +229,7 @@ function ItemGrid({ items, selectedIndex, onSelect, isCopy }: ItemGridProps) {
           // Copy cards use div (markdown renders block elements inside)
           <div
             key={i}
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(i)}
-            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && onSelect(i)}
-            className={cn(
-              "group relative cursor-pointer rounded-lg border p-3 text-sm transition-all hover:border-primary/50 hover:bg-accent",
-              selectedIndex === i
-                ? "border-primary bg-primary/5 shadow-sm"
-                : "border-border bg-background"
-            )}
+            className="group relative rounded-lg border p-3 text-sm transition-all hover:border-primary/50 hover:bg-accent border-border bg-background"
           >
             <div className="flex gap-1.5">
               <span className="text-xs font-semibold text-muted-foreground shrink-0 mt-0.5">{i + 1}.</span>
@@ -224,11 +254,57 @@ function ItemGrid({ items, selectedIndex, onSelect, isCopy }: ItemGridProps) {
                 <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{item}</ReactMarkdown>
               </div>
             </div>
-            {selectedIndex === i && (
-              <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Check size={11} />
+            {/* Copy button for final copy */}
+            <span
+              onClick={(e) => {
+                e.stopPropagation()
+                navigator.clipboard.writeText(item)
+                setCopiedIndex(i)
+                setTimeout(() => setCopiedIndex(null), 2000)
+              }}
+              className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex h-6 w-6 items-center justify-center rounded-full bg-black text-white cursor-pointer"
+              title="复制文案"
+            >
+              <Copy size={12} />
+            </span>
+            {/* Copy success tooltip */}
+            {copiedIndex === i && (
+              <span className="absolute right-2 bottom-9 bg-black text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                已复制
               </span>
             )}
+          </div>
+        ) : editingIndex === i ? (
+          // Editing mode
+          <div
+            key={i}
+            className={cn(
+              "relative rounded-lg border p-3 text-sm",
+              selectedIndex === i
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-border bg-background"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex gap-1.5">
+              <span className="text-xs font-semibold text-muted-foreground shrink-0 mt-0.5">{i + 1}.</span>
+              <Textarea
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="min-h-[80px] resize-none text-sm"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2 mt-2">
+              <Button variant="ghost" size="sm" onClick={handleEditCancel} className="h-7 px-2 cursor-pointer">
+                取消
+              </Button>
+              <Button variant="default" size="sm" onClick={handleEditSave} className="h-7 px-2 gap-1 cursor-pointer">
+                <Save size={12} />
+                保存
+              </Button>
+            </div>
           </div>
         ) : (
           <button
@@ -243,9 +319,12 @@ function ItemGrid({ items, selectedIndex, onSelect, isCopy }: ItemGridProps) {
           >
             <span className="mr-1 text-xs font-semibold text-muted-foreground">{i + 1}.</span>
             <span className="leading-relaxed">{item}</span>
-            {selectedIndex === i && (
-              <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                <Check size={11} />
+            {editable && (
+              <span
+                onClick={(e) => handleEditStart(i, item, e)}
+                className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 transition-opacity flex h-6 px-2 items-center justify-center rounded-full bg-black text-white text-xs cursor-pointer"
+              >
+                编辑
               </span>
             )}
           </button>
@@ -521,9 +600,9 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-4">
+      <div className="max-w-[95%] mx-auto px-4 py-6 space-y-4">
         {/* Header */}
-        <div className="mb-2">
+        <div className="mb-6">
           <h1 className="text-xl font-bold tracking-tight">自媒体文案生成</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             填写基本信息，逐步生成专业文案
@@ -602,7 +681,7 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                 <Button
                   onClick={handleGenerateTopics}
                   disabled={!project.industry || !project.topicType || topicsGen.isGenerating}
-                  className="gap-2"
+                  className="gap-2 cursor-pointer"
                 >
                   {topicsGen.isGenerating ? (
                     <Loader2 size={14} className="animate-spin" />
@@ -628,6 +707,12 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                   items={project.generatedTopics}
                   selectedIndex={project.selectedTopicIndex}
                   onSelect={handleSelectTopic}
+                  editable
+                  onEdit={(i, v) => {
+                    const newTopics = [...project.generatedTopics]
+                    newTopics[i] = v
+                    updateProject(activeProjectId, { generatedTopics: newTopics })
+                  }}
                 />
               )}
               {topicsGen.isGenerating && (
@@ -696,7 +781,7 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                         project.selectedTopicIndex === null ||
                         hooksGen.isGenerating
                       }
-                      className="gap-2"
+                      className="gap-2 cursor-pointer"
                     >
                       {hooksGen.isGenerating ? (
                         <Loader2 size={14} className="animate-spin" />
@@ -714,6 +799,12 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                   items={project.generatedHooks}
                   selectedIndex={project.selectedHookIndex}
                   onSelect={handleSelectHook}
+                  editable
+                  onEdit={(i, v) => {
+                    const newHooks = [...project.generatedHooks]
+                    newHooks[i] = v
+                    updateProject(activeProjectId, { generatedHooks: newHooks })
+                  }}
                 />
               )}
               {hooksGen.isGenerating && (
@@ -746,7 +837,7 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                   <p className="text-sm text-muted-foreground flex-1">
                     已选定钩子，点击生成文案核心要素
                   </p>
-                  <Button onClick={handleGenerateCoreElements} className="gap-2" disabled={coreGen.isGenerating}>
+                  <Button onClick={handleGenerateCoreElements} className="gap-2 cursor-pointer" disabled={coreGen.isGenerating}>
                     <Sparkles size={14} />
                     生成核心要素
                   </Button>
@@ -758,6 +849,12 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                   items={project.generatedCoreElements}
                   selectedIndex={project.selectedCoreElementIndex}
                   onSelect={handleSelectCoreElement}
+                  editable
+                  onEdit={(i, v) => {
+                    const newElements = [...project.generatedCoreElements]
+                    newElements[i] = v
+                    updateProject(activeProjectId, { generatedCoreElements: newElements })
+                  }}
                 />
               )}
               {coreGen.isGenerating && (
@@ -821,7 +918,7 @@ export function CopywritingWorkflow({ onOpenSettings }: CopywritingWorkflowProps
                         project.selectedCoreElementIndex === null ||
                         copyGen.isGenerating
                       }
-                      className="gap-2"
+                      className="gap-2 cursor-pointer"
                     >
                       {copyGen.isGenerating ? (
                         <Loader2 size={14} className="animate-spin" />

@@ -6,9 +6,7 @@ export const maxDuration = 120
 
 function getEndpoint(config: LLMConfig): string {
   if (config.baseURL) {
-    const base = config.baseURL.replace(/\/$/, "")
-    if (base.endsWith("/chat/completions")) return base
-    return `${base}/chat/completions`
+    return config.baseURL
   }
   return "https://api.openai.com/v1/chat/completions"
 }

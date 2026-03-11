@@ -11,22 +11,11 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import type { LLMConfig, LLMProvider, ImageModelConfig, SearchConfig } from "@/types"
+import type { LLMConfig, ImageModelConfig, SearchConfig } from "@/types"
 
-const MODEL_PRESETS: Record<string, string[]> = {
-  openai: ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo", "gpt-3.5-turbo"],
-  anthropic: ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"],
-  custom: [],
-}
+
 
 interface LLMConfigDialogProps {
   open: boolean
@@ -42,7 +31,7 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
 
   // ── 通用模型 state ──
   const [form, setForm] = useState<Partial<LLMConfig>>({
-    provider: "openai", model: "gpt-4o", name: "", apiKey: "", baseURL: "", enableBuiltinSearch: false,
+    name: "", model: "", apiKey: "", baseURL: "", enableBuiltinSearch: false,
   })
   const [showKey, setShowKey] = useState(false)
   const [adding, setAdding] = useState(configs.length === 0)
@@ -67,25 +56,25 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
     if (!form.name || !form.apiKey || !form.model) return
     if (editingId) {
       updateConfig(editingId, {
-        name: form.name!, provider: form.provider!, model: form.model!,
+        name: form.name!, model: form.model!,
         apiKey: form.apiKey!, baseURL: form.baseURL || undefined,
         enableBuiltinSearch: form.enableBuiltinSearch ?? false,
       })
       setEditingId(null)
     } else {
       addConfig({
-        name: form.name!, provider: form.provider!, model: form.model!,
+        name: form.name!, model: form.model!,
         apiKey: form.apiKey!, baseURL: form.baseURL || undefined,
         enableBuiltinSearch: form.enableBuiltinSearch ?? false,
       })
     }
-    setForm({ provider: "openai", model: "gpt-4o", name: "", apiKey: "", baseURL: "", enableBuiltinSearch: false })
+    setForm({ name: "", model: "", apiKey: "", baseURL: "", enableBuiltinSearch: false })
     setAdding(false)
   }
 
   function handleEditLLM(cfg: LLMConfig) {
     setForm({
-      name: cfg.name, provider: cfg.provider, model: cfg.model,
+      name: cfg.name, model: cfg.model,
       apiKey: cfg.apiKey, baseURL: cfg.baseURL ?? "", enableBuiltinSearch: cfg.enableBuiltinSearch ?? false,
     })
     setEditingId(cfg.id)
@@ -95,7 +84,7 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
   function cancelAddLLM() {
     setAdding(false)
     setEditingId(null)
-    setForm({ provider: "openai", model: "gpt-4o", name: "", apiKey: "", baseURL: "", enableBuiltinSearch: false })
+    setForm({ name: "", model: "", apiKey: "", baseURL: "", enableBuiltinSearch: false })
   }
 
   // ── 图片模型 handlers ──
@@ -158,7 +147,7 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                        {cfg.provider} · {cfg.model}
+                        {cfg.model}
                         {cfg.enableBuiltinSearch && <Globe size={11} className="text-blue-500" />}
                       </div>
                     </div>
@@ -184,43 +173,11 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   />
-                  <Select
-                    value={form.provider}
-                    onValueChange={(v: string | null) =>
-                      setForm((f) => ({
-                        ...f,
-                        provider: (v ?? "openai") as LLMProvider,
-                        model: MODEL_PRESETS[(v ?? "openai")] ?.[0] ?? "",
-                      }))
-                    }
-                  >
-                    <SelectTrigger><SelectValue placeholder="选择提供商" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="openai">OpenAI</SelectItem>
-                      <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
-                      <SelectItem value="custom">自定义端点</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  {form.provider === "custom" ? (
-                    <Input
-                      placeholder="模型名称（如：qwen-max）"
-                      value={form.model}
-                      onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
-                    />
-                  ) : (
-                    <Select
-                      value={form.model}
-                      onValueChange={(v: string | null) => setForm((f) => ({ ...f, model: v ?? "" }))}
-                    >
-                      <SelectTrigger><SelectValue placeholder="选择模型" /></SelectTrigger>
-                      <SelectContent>
-                        {MODEL_PRESETS[form.provider!]?.map((m) => (
-                          <SelectItem key={m} value={m}>{m}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Input
+                    placeholder="模型名称（如：gpt-4o、claude-3-opus、qwen-max）"
+                    value={form.model}
+                    onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
+                  />
 
                   <div className="relative">
                     <Input
@@ -235,13 +192,11 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
                     </button>
                   </div>
 
-                  {(form.provider === "custom" || form.provider === "openai") && (
-                    <Input
-                      placeholder="自定义 Base URL（可选）"
-                      value={form.baseURL}
-                      onChange={(e) => setForm((f) => ({ ...f, baseURL: e.target.value }))}
-                    />
-                  )}
+                  <Input
+                    placeholder="自定义 Base URL（可选）"
+                    value={form.baseURL}
+                    onChange={(e) => setForm((f) => ({ ...f, baseURL: e.target.value }))}
+                  />
 
                   <label className="flex items-center gap-2 text-xs cursor-pointer select-none text-muted-foreground">
                     <input

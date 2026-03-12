@@ -68,7 +68,7 @@ export type LLMProvider = "openai" | "anthropic" | "custom"
 export interface LLMConfig {
   id: string
   name: string
-  provider: LLMProvider
+  provider?: LLMProvider
   model: string
   apiKey: string
   baseURL?: string

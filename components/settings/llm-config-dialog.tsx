@@ -169,19 +169,19 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
                 <div className="space-y-2.5 border border-dashed border-border rounded-lg p-3">
                   <div className="text-xs font-medium text-muted-foreground">{editingId ? "编辑配置" : "添加新配置"}</div>
                   <Input
-                    placeholder="配置名称（如：我的 GPT-4）"
+                    placeholder="配置名称（如：我的 GPT-4），标识作用可以随意填写"
                     value={form.name}
                     onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   />
                   <Input
-                    placeholder="模型名称（如：gpt-4o、claude-3-opus、qwen-max）"
+                    placeholder="模型名称（如：qwen3.5-plus），根据实际模型名称填写"
                     value={form.model}
                     onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))}
                   />
 
                   <div className="relative">
                     <Input
-                      placeholder="API Key"
+                      placeholder="API Key（如：sk-1234567890abcdef1234567890abcdef）"
                       type={showKey ? "text" : "password"}
                       value={form.apiKey}
                       onChange={(e) => setForm((f) => ({ ...f, apiKey: e.target.value }))}
@@ -193,7 +193,7 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
                   </div>
 
                   <Input
-                    placeholder="自定义 Base URL（可选）"
+                    placeholder="模型 URL（如：https://dashscope.aliyuncs.com/compatible-mode/v1），根据实际模型URL填写"
                     value={form.baseURL}
                     onChange={(e) => setForm((f) => ({ ...f, baseURL: e.target.value }))}
                   />
@@ -313,9 +313,6 @@ export function LLMConfigDialog({ open, onOpenChange }: LLMConfigDialogProps) {
                     value={searchForm.provider}
                     onChange={(e) => setSearchForm((f) => ({ ...f, provider: e.target.value }))}
                   />
-                  <div className="text-xs text-muted-foreground px-0.5">
-                    常用：serper.dev（2500次/月免费）、tavily.com（1000次/月免费）
-                  </div>
                   <div className="relative">
                     <Input
                       placeholder="API Key"
